@@ -15,6 +15,7 @@ from __future__ import division
 import matplotlib.pyplot as plt
 # Librairie de calcul matriciel
 import numpy
+import numpy as np
 
 
 class Neuron:
@@ -44,8 +45,7 @@ class Neuron:
     @param x: entrée du neurone
     @type x: numpy array
     """
-        # TODO
-        self.y = None
+        self.y = numpy.linalg.norm(x - self.weights)
 
     def learn(self, eta, sigma, posxbmu, posybmu, x):
         """
@@ -61,8 +61,9 @@ class Neuron:
     @param x: entrée du neurone
     @type x: numpy array
     """
-        # TODO (attention à ne pas changer la partie à gauche du =)
-        self.weights[:] = numpy.random.random(self.weights.shape)
+        self.weights[:] += eta * numpy.exp(
+            -(numpy.power(numpy.abs(numpy.sqrt(numpy.power(self.posx - posxbmu, 2) + numpy.power(self.posy - posybmu, 2))), 2)
+              / numpy.power(2 * sigma, 2))) * (x - self.weights)
 
 
 class SOM:
@@ -224,7 +225,7 @@ class SOM:
     @summary: Calcul de l'erreur de quantification vectorielle moyenne du réseau sur le jeu de données
     @param X: le jeu de données
     @type X: numpy array
-    ""
+    """
         # On récupère le nombre d'exemples
         nsamples = X.shape[0]
         # Somme des erreurs quadratiques
