@@ -62,9 +62,12 @@ class Neuron:
     @type x: numpy array
     """
         self.weights[:] += eta * numpy.exp(
-            -(numpy.power(numpy.abs(numpy.sqrt(numpy.power(self.posx - posxbmu, 2) + numpy.power(self.posy - posybmu, 2))), 2)
+            -(numpy.power(numpy.abs(numpy.sqrt(numpy.power(posxbmu - self.posx, 2) + numpy.power(posybmu - self.posy, 2))), 2)
               / numpy.power(2 * sigma, 2))) * (x - self.weights)
+        return abs(sum(self.weights))
 
+    def getWeights(self, avg):
+        return avg - abs(sum(self.weights))
 
 class SOM:
     """ Classe implémentant une carte de Kohonen. """
@@ -126,10 +129,19 @@ class SOM:
     """
         # Calcul du neurone vainqueur
         bmux, bmuy = numpy.unravel_index(numpy.argmin(self.activitymap), self.gridsize)
+        appr_val = 0
         # Mise à jour des poids de chaque neurone
         for posx in range(self.gridsize[0]):
             for posy in range(self.gridsize[1]):
-                self.map[posx][posy].learn(eta, sigma, bmux, bmuy, x)
+                appr_val += self.map[posx][posy].learn(eta, sigma, bmux, bmuy, x)
+        avg = appr_val / self.gridsize[0]
+
+        diff_val = 0
+        for posx in range(self.gridsize[0]):
+            for posy in range(self.gridsize[1]):
+                diff_val += self.map[posx][posy].getWeights(avg)
+
+        return diff_val
 
     def scatter_plot(self, interactive=False):
         """
@@ -301,7 +313,7 @@ if __name__ == '__main__':
     # Taux d'apprentissage
     ETA = 0.05
     # Largeur du voisinage
-    SIGMA = 2
+    SIGMA = 1.4
     # Nombre de pas de temps d'apprentissage
     N = 30000
     # Affichage interactif de l'évolution du réseau
@@ -312,7 +324,7 @@ if __name__ == '__main__':
     # DONNÉES D'APPRENTISSAGE
     # Nombre de données à générer pour les ensembles 1, 2 et 3
     # TODO décommenter les données souhaitées
-    nsamples = 1000
+    nsamples = 1200
     # Ensemble de données 1
     # samples = numpy.random.random((nsamples, 2, 1)) * 2 - 1
     # Ensemble de données 2
@@ -363,6 +375,7 @@ if __name__ == '__main__':
         # Affichage de la figure
         plt.show()
     # Boucle d'apprentissage
+    autoOrga = 0
     for i in range(N + 1):
         # Choix d'un exemple aléatoire pour l'entrée courante
         index = numpy.random.randint(nsamples)
@@ -370,7 +383,7 @@ if __name__ == '__main__':
         # Calcul de l'activité du réseau
         network.compute(x)
         # Modification des poids du réseau
-        network.learn(ETA, SIGMA, x)
+        autoOrga += network.learn(ETA, SIGMA, x)
         # Mise à jour de l'affichage
         if VERBOSE and i % NAFFICHAGE == 0:
             # Effacement du contenu de la figure
@@ -390,6 +403,7 @@ if __name__ == '__main__':
     network.plot()
     # Affichage de l'erreur de quantification vectorielle moyenne après apprentissage
     print("erreur de quantification vectorielle moyenne ", network.MSE(samples))
+    print("Moyenne de la mesure d'auto organisation: ", autoOrga/N)
 
     network.arm_pos_prediction(1.5, 1.5)
     network.motor_pos_prediction(0, 0.5)
